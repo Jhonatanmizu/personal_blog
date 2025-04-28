@@ -1,0 +1,23 @@
+services:
+  app:
+    container_name: personal_blog_app
+    build:
+      context: .
+      dockerfile: ./dockerfile
+    ports:
+      - 8000:8000
+    volumes:
+      - ./src:/app
+      - ./data/web/static:/data/web/static
+      - ./data/web/media:/data/web/media
+    env_file:
+      - ./dotenv_files/.env
+    depends_on:
+      - database
+  database:
+    container_name: personal_blog_app_database
+    image: postgres:14-alpine
+    volumes:
+      - ./data/postgres/data:/var/lib/postgresql/data/
+    env_file:
+      - ./dotenv_files/.env
