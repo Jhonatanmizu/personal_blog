@@ -1,61 +1,71 @@
-FROM python:3.11-alpine3.20
+# -------- STAGE 1: Build Stage --------
+FROM python:3.11-alpine3.20 AS builder
 
-# Set maintainer label (metadata)
 LABEL maintainer="natanjesuss20@gmail.com"
 
-# Prevent Python from writing pyc files
 ENV PYTHONDONTWRITEBYTECODE=1
-# Ensure Python output is sent straight to terminal
 ENV PYTHONUNBUFFERED=1
-# Set PATH to include virtual environment
-ENV PATH="/venv/bin:$PATH"
+ENV VENV_PATH=/venv
+ENV PATH="${VENV_PATH}/bin:$PATH"
 
-# Install system dependencies required for Python packages
-RUN apk update && \
-    apk add --no-cache \
-        bash \
-        postgresql-dev \
-        gcc \
-        python3-dev \
-        musl-dev \
-        libffi-dev && \
-    rm -rf /var/cache/apk/*
+# Install build dependencies
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    python3-dev \
+    postgresql-dev \
+    libffi-dev \
+    bash
 
-# Create directories and set permissions
-RUN mkdir -p /app && \
-    mkdir -p /data/web/static && \
-    mkdir -p /data/web/media && \
-    mkdir -p /scripts
+# Create virtual environment
+RUN python -m venv ${VENV_PATH}
 
-# Copy application code
-COPY ./src /app
-COPY ./scripts /scripts
-
-# Set working directory
 WORKDIR /app
 
-# Create and activate virtual environment, install dependencies
-RUN python -m venv /venv && \
-    /venv/bin/pip install --upgrade pip && \
-    /venv/bin/pip install --no-cache-dir -r requirements.txt && \
-    chmod -R +x /scripts
+# Copy requirements and install
+COPY ./src/requirements.txt .
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Create non-root user and set ownership
-RUN adduser --disabled-password --no-create-home duser && \
-    chown -R duser:duser /venv && \
-    chown -R duser:duser /data/web && \
-    chown -R duser:duser /app && \
-    chmod -R 755 /data/web && \
-    chmod -R +x /scripts
+# Copy full app code (used in collectstatic, etc.)
+COPY ./src /app
 
-# Add venv and scripts
+# -------- STAGE 2: Final Stage --------
+FROM python:3.11-alpine3.20
 
-ENV PATH="/scripts:/venv/bind:${PATH}"
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV VENV_PATH=/venv
+ENV PATH="${VENV_PATH}/bin:/scripts:$PATH"
 
-# # Switch to non-root user
-# USER duser
+# Install only runtime dependencies
+RUN apk add --no-cache \
+    bash \
+    postgresql-libs
 
-# Expose port 8000 for Django
+# Create necessary directories
+RUN mkdir -p /app /data/web/static /data/web/media /scripts /venv
+
+# Create non-root user
+RUN adduser -D duser
+
+# Set correct ownership and permissions
+RUN chown -R duser:duser /app /data /scripts /venv && \
+    chmod -R u+rwX /data
+
+USER duser
+WORKDIR /app
+
+# Copy virtual environment from build stage
+COPY --from=builder /venv /venv
+
+# Copy app and scripts with correct ownership
+COPY --chown=duser:duser ./src /app
+COPY --chown=duser:duser ./scripts /scripts
+
+# Ensure scripts are executable
+RUN chmod -R +x /scripts
+
 EXPOSE 8000
 
-ENTRYPOINT ["/scripts/commands.sh"]
+ENTRYPOINT ["commands.sh"]
