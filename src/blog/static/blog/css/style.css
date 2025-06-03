@@ -1,15 +1,16 @@
 * {
-    padding: 0;
-    margin: 0;
-    text-decoration: none;
-    list-style: none;
+  padding: 0;
+  margin: 0;
+  text-decoration: none;
+  list-style: none;
 }
 
 html {
-    font-size: 62.5%;
+  font-size: 62.5%;
 }
 
 body {
-    font-size: 1.6rem;
-    background: black;
+  font-size: 1.6rem;
+  color: white;
+  background: black;
 }
