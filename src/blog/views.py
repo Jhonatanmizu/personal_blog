@@ -1,7 +1,6 @@
-from django.shortcuts import HttpResponse, render
+from django.http import HttpRequest
+from django.shortcuts import render
 
 
-def index(request):
-    print('index')
-    # return HttpResponse('Hello, world. You are at the blog index.')
+def index(request: HttpRequest):
     return render(request, 'blog/pages/index.html')

@@ -16,5 +16,6 @@ def app_setup(_):
         "show_header": setup.show_header,
         "show_search": setup.show_search,
         "show_menu": setup.show_menu,
-        "show_description": setup
+        "show_description": setup,
+        "favicon": setup.favicon,
     }
