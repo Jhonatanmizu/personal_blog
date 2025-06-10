@@ -46,22 +46,15 @@ RUN apk add --no-cache \
 # Create necessary directories
 RUN mkdir -p /app /data/web/static /data/web/media /scripts /venv
 
-# Create non-root user
-RUN adduser -D duser
-
-# Set correct ownership and permissions
-RUN chown -R duser:duser /app /data /scripts /venv && \
-    chmod -R u+rwX /data
-
-USER duser
+# Set working directory
 WORKDIR /app
 
 # Copy virtual environment from build stage
 COPY --from=builder /venv /venv
 
-# Copy app and scripts with correct ownership
-COPY --chown=duser:duser ./src /app
-COPY --chown=duser:duser ./scripts /scripts
+# Copy app and scripts
+COPY ./src /app/
+COPY ./scripts  /scripts
 
 # Ensure scripts are executable
 RUN chmod -R +x /scripts
