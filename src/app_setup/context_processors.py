@@ -1,16 +1,24 @@
-from .models import SiteSetup
+from .models import MenuLink, SiteSetup
 
 
 def app_setup(_):
     setup = SiteSetup.objects.order_by('-id').first()
+    menu = MenuLink.objects.filter(site_setup=setup)
 
     if not setup:
         return {
-            'app_setup': 'app_setup'
+            "title": "",
+            "description": "",
+            "show_header": False,
+            "show_search": False,
+            "show_menu": False,
+            "show_footer": False,
+            "show_description": False,
+            "favicon": "",
+            "menu": []
         }
 
     return {
-        'app_setup': 'app_setup',
         "title": setup.title,
         "description": setup.description,
         "show_header": setup.show_header,
@@ -19,4 +27,5 @@ def app_setup(_):
         "show_footer": setup.show_footer,
         "show_description": setup,
         "favicon": setup.favicon,
+        "menu": menu
     }
