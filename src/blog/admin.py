@@ -2,6 +2,7 @@ from typing import Any
 
 from django.contrib import admin
 from django.http.request import HttpRequest
+from django_summernote.admin import SummernoteModelAdmin
 
 from .models import Category, Page, Post, Tag
 
@@ -34,12 +35,12 @@ class PageAdmin(admin.ModelAdmin):
 
 
 @admin.register(Post)
-class PostAdmin(admin.ModelAdmin):
+class PostAdmin(SummernoteModelAdmin):
     list_display = (
         "id",
         "title",
         "is_published",
-        # "created_by",
+        "created_by",
     )
     list_display_links = ("title",)
     search_fields = (
@@ -69,6 +70,7 @@ class PostAdmin(admin.ModelAdmin):
         "tags",
         "category",
     )
+    summernote_fields = ("content",)
 
     def save_model(
         self, request: HttpRequest, obj: Post, form: Any, change: Any
@@ -77,5 +79,5 @@ class PostAdmin(admin.ModelAdmin):
             obj.updated_by = request.user
         else:
             obj.created_by = request.user
-        # obj.save()
+        return super().save_model(request, obj, form, change)
         return super().save_model(request, obj, form, change)
