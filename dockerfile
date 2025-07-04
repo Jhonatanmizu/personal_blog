@@ -1,64 +1,36 @@
-# -------- STAGE 1: Build Stage --------
-FROM python:3.11-alpine3.20 AS builder
+FROM python:3.11.3-alpine3.18
+LABEL mantainer="natanjesuss20@gmail.com"
 
-LABEL maintainer="natanjesuss20@gmail.com"
+ENV PYTHONDONTWRITEBYTECODE 1
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV VENV_PATH=/venv
-ENV PATH="${VENV_PATH}/bin:$PATH"
+# SETUP OUTPUTS
+ENV PYTHONUNBUFFERED 1
 
-# Install build dependencies
-RUN apk add --no-cache \
-    gcc \
-    musl-dev \
-    python3-dev \
-    postgresql-dev \
-    libffi-dev \
-    bash
-
-# Create virtual environment
-RUN python -m venv ${VENV_PATH}
+COPY src /app
+COPY scripts /scripts
 
 WORKDIR /app
 
-# Copy requirements and install
-COPY ./src/requirements.txt .
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-# Copy full app code (used in collectstatic, etc.)
-COPY ./src /app
-
-# -------- STAGE 2: Final Stage --------
-FROM python:3.11-alpine3.20
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV VENV_PATH=/venv
-ENV PATH="${VENV_PATH}/bin:/scripts:$PATH"
-
-# Install only runtime dependencies
-RUN apk add --no-cache \
-    bash \
-    postgresql-libs
-
-# Create necessary directories
-RUN mkdir -p /app /data/web/static /data/web/media /scripts /venv
-
-# Set working directory
-WORKDIR /app
-
-# Copy virtual environment from build stage
-COPY --from=builder /venv /venv
-
-# Copy app and scripts
-COPY ./src /app/
-COPY ./scripts  /scripts
-
-# Ensure scripts are executable
-RUN chmod -R +x /scripts
 
 EXPOSE 8000
 
-ENTRYPOINT ["commands.sh"]
+
+RUN python -m venv /venv && \
+  /venv/bin/pip install --upgrade pip && \
+  /venv/bin/pip install -r /app/requirements.txt && \
+  adduser --disabled-password --no-create-home duser && \
+  mkdir -p /data/web/static && \
+  mkdir -p /data/web/media && \
+  chown -R duser:duser /venv && \
+  chown -R duser:duser /data/web/static && \
+  chown -R duser:duser /data/web/media && \
+  chmod -R 755 /data/web/static && \
+  chmod -R 755 /data/web/media && \
+  chmod -R +x /scripts
+
+
+ENV PATH="/scripts:/venv/bin:$PATH"
+
+USER duser
+
+CMD ["commands.sh"]
