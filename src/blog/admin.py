@@ -80,4 +80,3 @@ class PostAdmin(SummernoteModelAdmin):
         else:
             obj.created_by = request.user
         return super().save_model(request, obj, form, change)
-        return super().save_model(request, obj, form, change)
